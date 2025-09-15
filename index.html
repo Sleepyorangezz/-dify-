@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dify 一键总结 (安全版)</title>
+    <style>
+        :root {
+            --primary-color: #007aff;
+            --background-color: #f0f2f5;
+            --container-bg: #ffffff;
+            --text-color: #1c1c1e;
+            --border-color: #e5e5ea;
+            --success-color: #34c759;
+            --error-color: #ff3b30;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container {
+            background: var(--container-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 26px;
+            font-weight: 600;
+            color: var(--text-color);
+            text-align: center;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            line-height: 1.5;
+            min-height: 80px;
+            resize: vertical;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        button:disabled {
+            background-color: #a9a9a9;
+            cursor: not-allowed;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        #status {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 500;
+            min-height: 22px;
+            transition: color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dify 一键总结 (安全版)</h1>
+        <textarea id="urlInput" placeholder="在此粘贴文章 URL" rows="3"></textarea>
+        <button id="submitBtn" onclick="sendToProxy()">🚀 发送总结请求</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function sendToProxy() {
+            const urlInput = document.getElementById('urlInput');
+            const submitBtn = document.getElementById('submitBtn');
+            const statusDiv = document.getElementById('status');
+
+            const url = urlInput.value.trim();
+            if (!url) {
+                statusDiv.textContent = '⚠️ 请先粘贴 URL！';
+                statusDiv.style.color = 'var(--error-color)';
+                return;
+            }
+
+            // *** 注意：这里不再有任何 API Key！***
+            // 我们调用的是自己的云函数代理 /api/proxy
+            const proxyApiUrl = '/api/proxy'; 
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = '处理中...';
+            statusDiv.textContent = '正在安全发送请求...';
+            statusDiv.style.color = 'var(--text-color)';
+
+            fetch(proxyApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: url // 只发送 URL
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(`请求失败: ${response.status} - ${err.error || '未知错误'}`) });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('来自代理的响应:', data);
+                if (data.data && data.data.status === 'succeeded') {
+                    statusDiv.textContent = '✅ 成功！总结已在飞书生成。';
+                    statusDiv.style.color = 'var(--success-color)';
+                } else {
+                    const errorMessage = data.data ? data.data.error : (data.error || '未知错误');
+                    statusDiv.textContent = `❌ 失败: ${errorMessage}`;
+                    statusDiv.style.color = 'var(--error-color)';
+                }
+            })
+            .catch(error => {
+                console.error('Fetch 错误:', error);
+                statusDiv.textContent = `❌ 发生错误: ${error.message}`;
+                statusDiv.style.color = 'var(--error-color)';
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 发送总结请求';
+            });
+        }
+    </script>
+</body>
+</html>
