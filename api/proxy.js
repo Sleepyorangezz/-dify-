@@ -12,10 +12,12 @@ export default async function handler(request) {
 
   try {
     const body = await request.json();
-    const urlToSummarize = body.url;
+    // --- 修改: 从请求体中解构出 url 和 contentType ---
+    const { url: urlToSummarize, contentType } = body;
 
-    if (!urlToSummarize) {
-      return new Response(JSON.stringify({ error: 'URL is required' }), {
+    // --- 修改: 增加对 contentType 的校验 ---
+    if (!urlToSummarize || !contentType) {
+      return new Response(JSON.stringify({ error: 'URL and contentType are required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -38,11 +40,14 @@ export default async function handler(request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        // --- 核心修改: 将 contentType 添加到 inputs 对象中 ---
         inputs: {
           query: urlToSummarize,
+          // 这里的键名 "CONTENT_TYPE" 必须与您在 Dify 工作流「开始」节点中定义的变量名完全一致！
+          CONTENT_TYPE: contentType, 
         },
         response_mode: 'blocking',
-        user: 'secure-vercel-user', // 可以使用一个固定的、安全的 user id
+        user: 'secure-vercel-user',
       }),
     });
 
