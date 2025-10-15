@@ -81,12 +81,57 @@
             min-height: 22px;
             transition: color 0.3s;
         }
+        /* --- 新增的 CSS 样式 --- */
+        .radio-group-title {
+            font-size: 14px;
+            color: #6c6c70;
+            margin-bottom: 10px;
+        }
+        .radio-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .radio-group input[type="radio"] {
+            display: none; /* 隐藏原始的单选按钮 */
+        }
+        .radio-group label {
+            flex: 1;
+            padding: 12px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            font-weight: 500;
+        }
+        .radio-group input[type="radio"]:checked + label {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Dify 一键总结 (安全版)</h1>
         <textarea id="urlInput" placeholder="在此粘贴文章 URL" rows="3"></textarea>
+
+        <!-- --- 新增的 HTML 结构 --- -->
+        <div class="radio-group-title">选择内容类型:</div>
+        <div class="radio-group">
+            <input type="radio" id="type-tactical" name="contentType" value="战术" checked>
+            <label for="type-tactical">战术</label>
+
+            <input type="radio" id="type-strategic" name="contentType" value="战略">
+            <label for="type-strategic">战略</label>
+
+            <input type="radio" id="type-radar" name="contentType" value="雷达">
+            <label for="type-radar">雷达</label>
+        </div>
+        <!-- --- HTML 结构结束 --- -->
+
         <button id="submitBtn" onclick="sendToProxy()">🚀 发送总结请求</button>
         <div id="status"></div>
     </div>
@@ -104,8 +149,9 @@
                 return;
             }
 
-            // *** 注意：这里不再有任何 API Key！***
-            // 我们调用的是自己的云函数代理 /api/proxy
+            // --- 新增: 获取选中的内容类型 ---
+            const selectedContentType = document.querySelector('input[name="contentType"]:checked').value;
+
             const proxyApiUrl = '/api/proxy'; 
 
             submitBtn.disabled = true;
@@ -118,8 +164,10 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                // --- 修改: 在请求体中同时发送 url 和 contentType ---
                 body: JSON.stringify({
-                    url: url // 只发送 URL
+                    url: url,
+                    contentType: selectedContentType 
                 })
             })
             .then(response => {
